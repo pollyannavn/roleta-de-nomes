@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Roleta de Nomes</title>
+<title>Roleta de Sorteio</title>
 <style>
 :root{--blue:#2563eb;--orange:#f97316;--ink:#172033;--muted:#64748b;--line:#e2e8f0}
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#eff6ff,#fff7ed);color:var(--ink);padding:24px}
-main{max-width:1050px;margin:auto}
+main{max-width:1600px;margin:auto}
 header{text-align:center;margin-bottom:24px}
 h1{margin:0 0 8px;font-size:clamp(1.8rem,4vw,2.6rem)}
 header p{margin:0;color:var(--muted)}
-.layout{display:grid;grid-template-columns:minmax(260px, .85fr) minmax(300px,1.15fr);gap:20px;align-items:start}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,.85fr);gap:16px;align-items:start}
 .panel{background:white;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 8px 28px #1e293b0d}
 h2{font-size:1.1rem;margin:0 0 12px}
 .help{font-size:.92rem;line-height:1.5;color:var(--muted);margin:0 0 12px}
@@ -27,6 +27,13 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .primary{background:var(--blue);color:white;flex:1}
 .secondary{background:#f1f5f9;color:var(--ink);border:1px solid var(--line)}
 .wheel-panel{text-align:center}
+.history-panel{min-width:0}
+.history-list{list-style:none;padding:0;margin:12px 0 0;max-height:520px;overflow-y:auto}
+.history-list li{display:flex;align-items:flex-start;gap:9px;padding:10px 8px;border-bottom:1px solid var(--line);font-size:.9rem;overflow-wrap:anywhere}
+.history-number{flex:0 0 25px;height:25px;border-radius:50%;display:grid;place-items:center;background:#fff1e8;color:#c2410c;font-size:.78rem;font-weight:800}
+.history-empty{padding:16px 10px;text-align:center;color:var(--muted);font-size:.9rem;line-height:1.5;background:#f8fafc;border-radius:12px}
+.history-count{font-size:.82rem;color:var(--muted);margin-top:5px}
+@media(max-width:900px){.layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.history-panel{grid-column:1/-1}.history-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px;max-height:260px}}
 .wheel-wrap{position:relative;width:min(100%,460px);aspect-ratio:1;margin:8px auto 16px}
 canvas{width:100%;height:100%;display:block;transition:transform 5s cubic-bezier(.12,.72,.12,1)}
 .pointer{position:absolute;z-index:2;top:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:19px solid transparent;border-right:19px solid transparent;border-top:38px solid #172033;filter:drop-shadow(0 2px 2px #0004)}
@@ -45,28 +52,28 @@ canvas{width:100%;height:100%;display:block;transition:transform 5s cubic-bezier
 .confetti-piece{position:absolute;top:-24px;left:var(--x);width:var(--w);height:var(--h);background:var(--c);opacity:.95;border-radius:var(--r);animation:confetti-fall var(--d) ease-in var(--delay) forwards}
 @keyframes confetti-fall{0%{transform:translate3d(0,-5vh,0) rotate(0deg);opacity:1}100%{transform:translate3d(var(--drift),110vh,0) rotate(var(--spin));opacity:.9}}
 @media(prefers-reduced-motion:reduce){.confetti-piece{animation-duration:1.2s!important}}
-@media(max-width:760px){body{padding:15px}.layout{grid-template-columns:1fr}.panel{padding:16px}textarea{min-height:170px}}
+@media(max-width:620px){body{padding:15px}.layout{grid-template-columns:1fr}.history-panel{grid-column:auto}.history-list{display:block;max-height:260px}.panel{padding:16px}textarea{min-height:170px}}
 @media(prefers-reduced-motion:reduce){canvas{transition-duration:1s}}
 </style>
 </head>
 <body>
 <main>
 <header>
-<h1>🎯 Roleta de Nomes</h1>
-<p>Insira as entradas e deixe a sorte decidir!</p>
+<h1>🎯 Roleta de Sorteio</h1>
+<p>Insira os itens e deixe a sorte decidir!</p>
 </header>
 <div class="layout">
 <section class="panel">
 <h2>1. Insira as entradas</h2>
-<p class="help">Digite ou cole os nomes abaixo. Cada linha representa uma entrada diferente. A roleta aceita de 2 a 50 entradas.</p>
-<textarea id="entries" placeholder="Ana&#10;Bruno&#10;Carla&#10;Daniel" spellcheck="false" aria-label="Lista de nomes"></textarea>
+<p class="help">Digite ou cole o que deseja sortear. Cada linha representa uma entrada diferente: nomes, números, palavras ou expressões. A roleta aceita de 2 a 50 entradas.</p>
+<textarea id="entries" placeholder="Ana&#10;25&#10;Azul&#10;Criatividade" spellcheck="false" aria-label="Lista de entradas para o sorteio"></textarea>
 <div class="counter"><span id="count">0 / 50 entradas</span><span>Uma entrada por linha</span></div>
 <div id="status" class="status" aria-live="polite">Insira pelo menos 2 nomes para começar.</div>
 <div class="actions">
 <button id="update" class="primary">Atualizar roleta</button>
 <button id="clear" class="secondary">Limpar</button>
 </div>
-<p class="note">Nomes repetidos são considerados entradas distintas e podem ser sorteados separadamente.</p>
+<p class="note">Entradas repetidas são consideradas opções distintas e podem ser sorteadas separadamente.</p>
 </section>
 <section class="panel wheel-panel">
 <h2>2. Faça o sorteio</h2>
@@ -77,15 +84,21 @@ canvas{width:100%;height:100%;display:block;transition:transform 5s cubic-bezier
 </div>
 <button id="spin" class="spin" disabled>🎡 GIRAR A ROLETA</button>
 <div id="result" class="result" hidden role="dialog" aria-modal="true" aria-labelledby="winner" aria-live="polite">
-<div class="result-label">🏆 NOME SORTEADO</div>
+<div class="result-label">🏆 ITEM SORTEADO</div>
 <div id="winner" class="winner"></div>
 <label class="exclude-option">
 <input type="checkbox" id="excludeWinner">
-<span>Excluir este nome dos próximos sorteios</span>
+<span>Excluir esta entrada dos próximos sorteios</span>
 </label>
 <button id="continue" class="primary">Continuar</button>
-<p class="note" style="margin-bottom:0">Se não marcar a opção, o nome continuará participando dos próximos sorteios.</p>
+<p class="note" style="margin-bottom:0">Se não marcar a opção, esta entrada continuará participando dos próximos sorteios.</p>
 </div>
+</section>
+<section class="panel history-panel">
+<h2>3. Itens sorteados</h2>
+<div id="historyCount" class="history-count">0 sorteios realizados</div>
+<div id="historyEmpty" class="history-empty">Os itens sorteados aparecerão aqui, em ordem de sorteio.</div>
+<ol id="historyList" class="history-list" aria-live="polite"></ol>
 </section>
 </div>
 <p class="note" style="text-align:center">Sorteio aleatório entre todas as entradas cadastradas.</p>
@@ -96,12 +109,12 @@ canvas{width:100%;height:100%;display:block;transition:transform 5s cubic-bezier
  const $=id=>document.getElementById(id);
  const canvas=$('wheel'),ctx=canvas.getContext('2d');
  const palette=['#2563EB','#F97316','#0D9488','#9333EA','#DB2777','#0891B2','#65A30D','#D97706','#4F46E5','#DC2626'];
- let names=[],rotation=0,busy=false,winnerIndex=-1;
+ let names=[],rotation=0,busy=false,winnerIndex=-1,drawHistory=[];
  const TAU=Math.PI*2;
  function parse(){return $('entries').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean)}
  function draw(){
   const n=names.length;ctx.clearRect(0,0,800,800);
-  if(!n){ctx.beginPath();ctx.arc(400,400,385,0,TAU);ctx.fillStyle='#64748b';ctx.fill();ctx.fillStyle='white';ctx.font='bold 30px Arial';ctx.textAlign='center';ctx.fillText('Insira os nomes',400,410);return}
+  if(!n){ctx.beginPath();ctx.arc(400,400,385,0,TAU);ctx.fillStyle='#64748b';ctx.fill();ctx.fillStyle='white';ctx.font='bold 30px Arial';ctx.textAlign='center';ctx.fillText('Insira as entradas',400,410);return}
   const arc=TAU/n;
   for(let i=0;i<n;i++){
    const start=-Math.PI/2+i*arc;
@@ -114,6 +127,22 @@ canvas{width:100%;height:100%;display:block;transition:transform 5s cubic-bezier
    ctx.shadowColor='#0005';ctx.shadowBlur=2;ctx.fillText(label,350,0);ctx.restore();
   }
   ctx.beginPath();ctx.arc(400,400,385,0,TAU);ctx.strokeStyle='white';ctx.lineWidth=8;ctx.stroke();
+ }
+ function renderHistory(){
+  const list=$('historyList');
+  list.innerHTML='';
+  $('historyCount').textContent=`${drawHistory.length} ${drawHistory.length===1?'sorteio realizado':'sorteios realizados'}`;
+  $('historyEmpty').hidden=drawHistory.length>0;
+  drawHistory.forEach((name,index)=>{
+   const item=document.createElement('li');
+   const number=document.createElement('span');
+   number.className='history-number';
+   number.textContent=String(index+1);
+   const label=document.createElement('span');
+   label.textContent=name;
+   item.append(number,label);
+   list.appendChild(item);
+  });
  }
  function validate(){
   const count=parse().length;$('count').textContent=`${count} / 50 entradas`;
@@ -158,7 +187,7 @@ canvas{width:100%;height:100%;display:block;transition:transform 5s cubic-bezier
   canvas.style.transform=`rotate(${rotation}deg)`;
   $('spin').textContent='SORTEANDO...';validate();
   setTimeout(()=>{
-   $('winner').textContent=names[index];$('excludeWinner').checked=false;$('result').hidden=false;celebrate();
+   $('winner').textContent=names[index];drawHistory.push(names[index]);renderHistory();$('excludeWinner').checked=false;$('result').hidden=false;celebrate();
    $('spin').textContent='🎡 GIRAR NOVAMENTE';busy=false;validate();
   },5100);
  }
@@ -177,9 +206,9 @@ canvas{width:100%;height:100%;display:block;transition:transform 5s cubic-bezier
   $('spin').textContent=names.length>=2?'🎡 GIRAR NOVAMENTE':'🎡 ROLETA';
   validate();
  });
- $('clear').addEventListener('click',()=>{if(busy)return;$('entries').value='';names=[];rotation=0;winnerIndex=-1;$('result').hidden=true;$('excludeWinner').checked=false;canvas.style.transition='none';canvas.style.transform='rotate(0deg)';draw();validate()});
+ $('clear').addEventListener('click',()=>{if(busy)return;$('entries').value='';names=[];drawHistory=[];renderHistory();rotation=0;winnerIndex=-1;$('result').hidden=true;$('excludeWinner').checked=false;canvas.style.transition='none';canvas.style.transform='rotate(0deg)';draw();validate()});
  $('entries').addEventListener('input',validate);
- draw();validate();
+ draw();renderHistory();validate();
 })();
 </script>
 </body>
